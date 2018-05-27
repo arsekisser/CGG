@@ -1,0 +1,142 @@
+#include<stdio.h>
+#include<math.h>
+#include<GL/glut.h>
+#define PI 3.142
+GLint submenu;
+GLfloat theta=0.0;
+GLint nctrlpts=4,nBezCurvepts=20;
+struct point
+{
+    GLfloat x,y,z;
+};
+typedef struct point cp;
+point ctrlpts[4]={{20,100,0},{30,110,0},{50,90,0},{60,100,0}};
+void Bino(GLint n,GLint *C)
+{
+    GLint k,j;
+    for(k=0;k<=n;k++)
+    {
+        C[k]=1;
+        for(j=n;j>=k+1;j--)
+            C[k]*=j;
+        for(j=n-k;j>=2;j--)
+            C[k]/=j;
+    }
+}
+void compute(GLfloat u,GLint *C,GLint ncrtlpts,cp *ctrlpts,cp *bezcurvepts)
+{
+    GLint n=nctrlpts-1,k;
+    GLfloat Blend;
+    bezcurvepts->x=bezcurvepts->y=bezcurvepts->z=0.0;
+    for(k=0;k<=n;k++)
+    {
+        Blend=C[k]*pow(u,k)*pow(1-u,n-k);
+        bezcurvepts->x+=ctrlpts[k].x*Blend;
+        bezcurvepts->y+=ctrlpts[k].y*Blend;
+        bezcurvepts->z+=ctrlpts[k].z*Blend;
+    }
+}
+void Bezier(GLint nctrlpts,GLint nBezCurvepts, cp * ctrlpts)
+{
+    cp bezcurvepts;
+    GLint k,*C;
+    GLfloat u;
+    C=new GLint[nctrlpts];
+    Bino(nctrlpts-1,C);
+    glBegin(GL_LINE_STRIP);
+    for(k=0;k<=nBezCurvepts;k++)
+    {
+        u=(GLfloat)k/(GLfloat)nBezCurvepts;
+        compute(u,C,nctrlpts,ctrlpts,&bezcurvepts);
+        glVertex2f(bezcurvepts.x,bezcurvepts.y);
+    }
+    glEnd();
+}
+void menufcn(int n)
+{
+    switch(n)
+    {
+        case 1: 
+        ctrlpts[1].x+=10*sin((theta)*PI/180);
+        ctrlpts[1].y+=5*sin((theta)*PI/180);
+        ctrlpts[2].x-=10*sin((theta+30)*PI/180);
+        ctrlpts[2].y-=10*sin((theta+30)*PI/180);
+        ctrlpts[3].x-=4*sin((theta)*PI/180);
+        ctrlpts[3].y-=1*sin((theta-30)*PI/180);
+        theta+=0.1;
+        break;
+
+        case 2:
+            ctrlpts[1].x-=10*sin((theta)*PI/180);
+            ctrlpts[1].y-=5*sin((theta)*PI/180);
+            ctrlpts[2].x+=10*sin((theta+30)*PI/180);
+            ctrlpts[2].y+=10*sin((theta+30)*PI/180);
+            ctrlpts[3].x+=4*sin((theta)*PI/180);
+            ctrlpts[3].y-=1*sin((theta-30)*PI/180);
+            theta+=0.1;
+            break;
+            case 3:exit(0);break;
+}
+}
+void display()
+{
+    GLint k;
+    glClear(GL_COLOR_BUFFER_BIT);
+    glPushMatrix();
+    glColor3f(1,151/255,51/255);
+    for(k=0;k<8;k++)
+    {
+        glTranslatef(0,-0.8,0);
+        Bezier(nctrlpts,nBezCurvepts,ctrlpts);
+    }
+
+    glColor3f(1,1,1);
+    for(k=0;k<8;k++)
+    {
+        glTranslatef(0,-0.8,0);
+        Bezier(nctrlpts,nBezCurvepts,ctrlpts);
+    }
+
+    glColor3f(0,1,0);
+    for(k=0;k<8;k++)
+    {
+        glTranslatef(0,-0.8,0);
+        Bezier(nctrlpts,nBezCurvepts,ctrlpts);
+    }
+    glPopMatrix();
+    glLineWidth(5);
+    glColor3f(0.2,0.5,0.8);
+    glBegin(GL_LINES);
+    glVertex2f(20,100);
+    glVertex2f(20,40);
+    glEnd();
+    glFlush();
+    glutPostRedisplay();
+    glutSwapBuffers();
+}
+void reshape(int w,int h)
+{
+    glViewport(0,0,w,h);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0,130,0,130);
+    glMatrixMode(GL_MODELVIEW);
+}
+int main(int argc,char ** argv)
+{
+    glutInit(&argc,argv);
+    glutInitDisplayMode(GLUT_RGB|GLUT_DOUBLE);
+    glutInitWindowSize(600,600);
+    glutCreateWindow("FLAG");
+    submenu=glutCreateMenu(menufcn);
+
+    glutAddMenuEntry("UP",1);
+    glutAddMenuEntry("DOWN",2);
+    glutAddMenuEntry("Exit",3);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+
+    glutDisplayFunc(display);
+    glutReshapeFunc(reshape);
+    glutMainLoop();
+    return 0;
+}
